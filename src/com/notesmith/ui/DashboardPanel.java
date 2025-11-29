@@ -100,7 +100,7 @@ public class DashboardPanel extends CPanel {
         titleWrap.setOpaque(false);
         titleWrap.setLayout(new BoxLayout(titleWrap, BoxLayout.X_AXIS));
 
-        JLabel appTitle = CLabel.title("📝 NoteSmith");
+        JLabel appTitle = CLabel.title("NoteSmith");
         appTitle.setForeground(AppStyles.ACCENT);
         titleWrap.add(appTitle);
         titleWrap.add(Box.createHorizontalStrut(24));
@@ -147,7 +147,7 @@ public class DashboardPanel extends CPanel {
                     
                     // Add tags with better styling
                     if (!note.getTags().isEmpty()) {
-                        display += " 🏷️ " + String.join(" • ", note.getTags());
+                        display += " [" + String.join(", ", note.getTags()) + "]";
                     }
                     
                     setText(display);
@@ -168,7 +168,7 @@ public class DashboardPanel extends CPanel {
         leftTop.setLayout(new BoxLayout(leftTop, BoxLayout.Y_AXIS));
         leftTop.setOpaque(false);
         
-        JLabel notesLabel = new JLabel("📚 Your Notes");
+        JLabel notesLabel = new JLabel("Your Notes");
         notesLabel.setFont(AppStyles.fontSubtitle());
         notesLabel.setForeground(AppStyles.TEXT_PRIMARY);
         notesLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -188,8 +188,9 @@ public class DashboardPanel extends CPanel {
         
         JPanel searchPanel = new JPanel(new BorderLayout(8, 0));
         searchPanel.setOpaque(false);
-        JLabel searchIcon = new JLabel("🔍");
-        searchIcon.setFont(AppStyles.fontSubtitle());
+        JLabel searchIcon = new JLabel("Search:");
+        searchIcon.setFont(AppStyles.fontNormal());
+        searchIcon.setForeground(AppStyles.TEXT_SECONDARY);
         searchPanel.add(searchIcon, BorderLayout.WEST);
         searchPanel.add(searchField, BorderLayout.CENTER);
         searchPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
@@ -208,15 +209,15 @@ public class DashboardPanel extends CPanel {
         bottomButtons.setOpaque(false);
         bottomButtons.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
         
-        CButton exportBtn = CButton.secondary("📤 Export Selected");
+        CButton exportBtn = CButton.secondary("Export Selected");
         exportBtn.addActionListener(e -> exportSelected());
         bottomButtons.add(exportBtn);
         
-        CButton exportAllBtn = CButton.secondary("📦 Export All");
+        CButton exportAllBtn = CButton.secondary("Export All");
         exportAllBtn.addActionListener(e -> exportAll());
         bottomButtons.add(exportAllBtn);
         
-        CButton deleteBtn = CButton.danger("🗑️ Delete Selected");
+        CButton deleteBtn = CButton.danger("Delete Selected");
         deleteBtn.addActionListener(e -> deleteSelectedWithConfirmation());
         bottomButtons.add(deleteBtn);
         
@@ -231,7 +232,7 @@ public class DashboardPanel extends CPanel {
         fields.setLayout(new BoxLayout(fields, BoxLayout.Y_AXIS));
         fields.setOpaque(false);
 
-        JLabel titleLabel = new JLabel("✏️ Title");
+        JLabel titleLabel = new JLabel("Title");
         titleLabel.setFont(AppStyles.fontSubtitle());
         titleLabel.setForeground(AppStyles.TEXT_PRIMARY);
         fullWidth(titleLabel);
@@ -249,7 +250,7 @@ public class DashboardPanel extends CPanel {
         fields.add(Box.createVerticalStrut(16));
         
         // Tags field
-        JLabel tagsLabel = new JLabel("🏷️ Tags (comma-separated)");
+        JLabel tagsLabel = new JLabel("Tags (comma-separated)");
         tagsLabel.setFont(AppStyles.fontSubtitle());
         tagsLabel.setForeground(AppStyles.TEXT_PRIMARY);
         fullWidth(tagsLabel);
@@ -264,7 +265,7 @@ public class DashboardPanel extends CPanel {
 
         fields.add(Box.createVerticalStrut(16));
 
-        JLabel contentLabel = new JLabel("📄 Content");
+        JLabel contentLabel = new JLabel("Content");
         contentLabel.setFont(AppStyles.fontSubtitle());
         contentLabel.setForeground(AppStyles.TEXT_PRIMARY);
         fullWidth(contentLabel);
@@ -344,7 +345,7 @@ public class DashboardPanel extends CPanel {
 
         // add New Note + Save buttons here
         // Pin checkbox
-        pinCheckbox = new JCheckBox("📌 Pin this note");
+        pinCheckbox = new JCheckBox("Pin this note");
         pinCheckbox.setOpaque(false);
         pinCheckbox.setForeground(AppStyles.TEXT_PRIMARY);
         pinCheckbox.setFont(AppStyles.fontNormal());
@@ -355,7 +356,7 @@ public class DashboardPanel extends CPanel {
         fields.add(Box.createVerticalStrut(16));
         
         // New Note button: clears editor and goes back to "Add Note" mode
-        CButton newNoteBtn = CButton.secondary("➕ New Note");
+        CButton newNoteBtn = CButton.secondary("New Note");
         newNoteBtn.setPreferredSize(new Dimension(120, 40));
         newNoteBtn.addActionListener(e -> clearEditor());
         buttonBar.add(newNoteBtn);
@@ -363,7 +364,7 @@ public class DashboardPanel extends CPanel {
         buttonBar.add(Box.createHorizontalStrut(12));
 
 // Save/Add button: creates or updates depending on currentNote
-        saveBtn = new CButton("💾 Add Note");
+        saveBtn = new CButton("Add Note");
         saveBtn.setPreferredSize(new Dimension(120, 40));
         saveBtn.addActionListener(e -> saveNote());
         buttonBar.add(saveBtn);
@@ -400,7 +401,7 @@ public class DashboardPanel extends CPanel {
                     contentArea.setText(selected.getContent());
                     tagsField.setText(String.join(", ", selected.getTags()));
                     pinCheckbox.setSelected(selected.isPinned());
-                    saveBtn.setText("💾 Save Changes");
+                    saveBtn.setText("Save Changes");
                     updatePreview();
                 }
             }
@@ -510,7 +511,7 @@ public class DashboardPanel extends CPanel {
         contentArea.setText("");
         tagsField.setText("");
         pinCheckbox.setSelected(false);
-        saveBtn.setText("💾 Add Note");
+        saveBtn.setText("Add Note");
         updatePreview();
         noteList.clearSelection();
     }
@@ -809,7 +810,7 @@ public class DashboardPanel extends CPanel {
         content.setOpaque(false);
         
         // Title with gradient effect
-        JLabel titleLabel = new JLabel("🤖 AI Insights");
+        JLabel titleLabel = new JLabel("AI Insights");
         titleLabel.setFont(AppStyles.fontTitle());
         titleLabel.setForeground(AppStyles.AI_ACCENT);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -849,7 +850,7 @@ public class DashboardPanel extends CPanel {
         content.add(Box.createVerticalStrut(20));
         
         // Related Notes Section
-        JLabel relatedLabel = new JLabel("🔗 Related Notes");
+        JLabel relatedLabel = new JLabel("Related Notes");
         relatedLabel.setFont(AppStyles.fontSubtitle());
         relatedLabel.setForeground(AppStyles.TEXT_PRIMARY);
         relatedLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -881,7 +882,7 @@ public class DashboardPanel extends CPanel {
         
         content.add(Box.createVerticalStrut(12));
         
-        CButton findRelatedBtn = CButton.ai("🔍 Find Related");
+        CButton findRelatedBtn = CButton.ai("Find Related");
         findRelatedBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         findRelatedBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         findRelatedBtn.addActionListener(e -> findRelatedNotes());
@@ -890,7 +891,7 @@ public class DashboardPanel extends CPanel {
         content.add(Box.createVerticalStrut(24));
         
         // Summary Section
-        JLabel summaryLabel = new JLabel("📝 AI Summary");
+        JLabel summaryLabel = new JLabel("AI Summary");
         summaryLabel.setFont(AppStyles.fontSubtitle());
         summaryLabel.setForeground(AppStyles.TEXT_PRIMARY);
         summaryLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -919,7 +920,7 @@ public class DashboardPanel extends CPanel {
         
         content.add(Box.createVerticalStrut(12));
         
-        CButton summarizeBtn = CButton.ai("✨ Summarize");
+        CButton summarizeBtn = CButton.ai("Summarize");
         summarizeBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         summarizeBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         summarizeBtn.addActionListener(e -> summarizeCurrentNote());
@@ -928,7 +929,7 @@ public class DashboardPanel extends CPanel {
         content.add(Box.createVerticalStrut(24));
         
         // Tag Suggestions
-        CButton suggestTagsBtn = CButton.ai("🏷️ Suggest Tags");
+        CButton suggestTagsBtn = CButton.ai("Suggest Tags");
         suggestTagsBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         suggestTagsBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         suggestTagsBtn.addActionListener(e -> suggestTags());
