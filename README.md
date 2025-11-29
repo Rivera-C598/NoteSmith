@@ -1,42 +1,53 @@
-# NoteSmith 📝
+# NoteSmith
 
-A modern, feature-rich note-taking application built with Java Swing. NoteSmith combines elegant design with powerful functionality, offering markdown support, dual persistence, and robust security.
+> A modern, AI-powered note-taking application built with Java Swing
 
-## ✨ Features
+[![Java](https://img.shields.io/badge/Java-11+-orange.svg)](https://www.oracle.com/java/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0+-blue.svg)](https://www.mysql.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-### Core Functionality
+## Overview
+
+NoteSmith is a feature-rich desktop note-taking application that combines elegant design with powerful functionality. It offers markdown support, dual persistence (database + file backup), secure authentication, and AI-powered features using Google's Gemini API.
+
+## Features
+
+### Core Features
 - **Rich Text Editing** - Markdown formatting with live preview
-- **Dual Persistence** - Automatic backup to both database and file system
+- **Dual Persistence** - Automatic backup to both MySQL database and file system
 - **User Authentication** - Secure login with BCrypt password hashing
-- **Note Management** - Create, edit, delete, and organize notes effortlessly
+- **Search & Filter** - Real-time search across all notes
+- **Tags System** - Organize notes with multiple tags
+- **Pin Notes** - Keep important notes at the top
+- **Export** - Export notes to Markdown or HTML format
+
+### AI-Powered Features (Optional)
+- **Smart Linking** - AI discovers connections between notes
+- **Auto-Summarization** - Generate TL;DR for long notes
+- **Tag Suggestions** - AI suggests relevant tags based on content
+- **Mock Mode** - Works without API key using demo responses
 
 ### Security
-- ✅ BCrypt password hashing (cost factor: 12)
-- ✅ Password strength validation and indicator
-- ✅ Username format validation
-- ✅ Connection pooling for database security
-- ✅ SQL injection protection via prepared statements
+- BCrypt password hashing (cost factor: 12)
+- Password strength validation
+- SQL injection protection via prepared statements
+- Connection pooling for database security
+- Secure API key management
 
 ### User Experience
-- 🎨 Modern dark theme UI
-- ⌨️ Keyboard shortcuts (Ctrl+S, Ctrl+N, Ctrl+Z, Ctrl+Y)
-- 🔄 Undo/Redo support
-- 📊 Live markdown preview
-- ⚡ Fast and responsive interface
-- ✅ Confirmation dialogs for destructive actions
+- Modern dark theme UI
+- Keyboard shortcuts (Ctrl+S, Ctrl+N, Ctrl+Z, Ctrl+Y, Delete)
+- Undo/Redo support
+- Live markdown preview
+- Confirmation dialogs for destructive actions
+- Responsive interface
 
-### Markdown Support
-- **Bold** text with `**text**`
-- *Italic* text with `_text_`
-- Bullet lists with `- item`
-- Real-time preview pane
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-- Java 11 or higher
-- MySQL Server (XAMPP recommended)
-- Libraries included in `lib/`:
+- **Java 11 or higher**
+- **MySQL Server** (XAMPP recommended for Windows)
+- **Libraries** (included in `lib/` folder):
   - MySQL Connector/J 9.5.0
   - jBCrypt 0.4
 
@@ -44,194 +55,143 @@ A modern, feature-rich note-taking application built with Java Swing. NoteSmith 
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Rivera-C598/NoteSmith.git
    cd NoteSmith
    ```
 
-2. **Setup database**
+2. **Setup database** (see [SETUP.md](SETUP.md) for detailed instructions)
    ```sql
    CREATE DATABASE notesmith_db;
-   USE notesmith_db;
-   
-   CREATE TABLE users (
-       id INT AUTO_INCREMENT PRIMARY KEY,
-       username VARCHAR(50) UNIQUE NOT NULL,
-       password_hash VARCHAR(255) NOT NULL,
-       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-   );
-   
-   CREATE TABLE notes (
-       id VARCHAR(36) PRIMARY KEY,
-       user_id INT NOT NULL,
-       title VARCHAR(200) NOT NULL,
-       content TEXT,
-       created_at TIMESTAMP NOT NULL,
-       updated_at TIMESTAMP NOT NULL,
-       type VARCHAR(20) NOT NULL,
-       done BOOLEAN DEFAULT FALSE,
-       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-       INDEX idx_user_created (user_id, created_at DESC)
-   );
+   -- Run the SQL scripts from SETUP.md
    ```
 
-3. **Configure application**
+3. **Configure the application**
    ```bash
    cp config.properties.example config.properties
-   # Edit config.properties with your database credentials
+   # Edit config.properties with your settings
    ```
 
 4. **Run the application**
-   - **From IDE**: Run `com.notesmith.Main`
-   - **From CLI**: 
-     ```bash
-     javac -cp "lib/*" -d out src/com/notesmith/**/*.java
-     java -cp "out;lib/*" com.notesmith.Main
-     ```
+   - Open project in IntelliJ IDEA
+   - Run `com.notesmith.Main`
 
-## 📖 Usage
+## Configuration
 
-### Registration
-1. Click "Create an account"
-2. Enter username (3-20 alphanumeric characters)
-3. Create strong password (min 8 chars, uppercase, lowercase, digit, special char)
-4. Watch the password strength indicator
-5. Click "Register"
+### Database Configuration
+Edit `config.properties`:
+```properties
+db.url=jdbc:mysql://localhost:3306/notesmith_db
+db.user=root
+db.password=your_password
+```
 
-### Creating Notes
-1. Login with your credentials
-2. Enter note title and content
-3. Use markdown formatting buttons or shortcuts
-4. Press `Ctrl+S` or click "Add Note"
-5. View live preview in the right pane
+### AI Configuration (Optional)
+Get a free API key from [Google AI Studio](https://makersuite.google.com/app/apikey):
+```properties
+ai.enabled=true
+ai.gemini.api.key=YOUR_API_KEY_HERE
+```
+
+**Note**: The app works perfectly without an API key using Mock AI mode!
+
+## Usage
 
 ### Keyboard Shortcuts
 | Shortcut | Action |
 |----------|--------|
 | `Ctrl+S` | Save current note |
 | `Ctrl+N` | Create new note |
+| `Ctrl+E` | Export selected note |
 | `Ctrl+Z` | Undo |
 | `Ctrl+Y` | Redo |
 | `Delete` | Delete selected note |
 
-## 🏗️ Architecture
+### Markdown Formatting
+- **Bold**: `**text**`
+- *Italic*: `_text_`
+- Lists: `- item`
+
+## Architecture
 
 ```
 src/com/notesmith/
+├── ai/              # AI integration (Gemini API)
 ├── config/          # Configuration and styling
-│   ├── AppConfig.java
-│   ├── AppStyles.java
-│   ├── DbConfig.java
-│   └── UIConstants.java
 ├── exception/       # Custom exception hierarchy
-│   ├── NoteSmithException.java
-│   ├── AuthenticationException.java
-│   ├── ValidationException.java
-│   └── PersistenceException.java
-├── model/           # Domain models
-│   ├── Note.java
-│   ├── TextNote.java
-│   ├── TodoNote.java
-│   ├── NoteType.java
-│   └── User.java
+├── model/           # Domain models (Note, User)
 ├── persistence/     # Data access layer
-│   ├── Database.java
-│   ├── ConnectionPool.java
-│   ├── NoteRepository.java
-│   ├── UserRepository.java
-│   ├── JdbcNoteRepository.java
-│   ├── JdbcUserRepository.java
-│   ├── FileNoteRepository.java
-│   └── DualNoteRepository.java
-├── security/        # Security utilities
-│   └── PasswordHasher.java
-├── ui/              # User interface
-│   ├── NoteSmithApp.java
-│   ├── LoginPanel.java
-│   ├── RegisterPanel.java
-│   ├── DashboardPanel.java
-│   └── components/  # Reusable UI components
-├── util/            # Utility classes
-│   ├── Logger.java
-│   └── ValidationUtils.java
-└── Main.java        # Application entry point
+├── security/        # Password hashing
+├── ui/              # Swing UI components
+└── util/            # Utility classes
 ```
 
-## 🔧 Configuration
+### Design Patterns
+- **Repository Pattern** - Data access abstraction
+- **Strategy Pattern** - Dual persistence implementation
+- **Observer Pattern** - UI updates
+- **Singleton Pattern** - Connection pool
+- **Factory Pattern** - Note creation
 
-Edit `config.properties` to customize:
-
-```properties
-# Database
-db.url=jdbc:mysql://localhost:3306/notesmith_db
-db.user=root
-db.password=your_password
-db.pool.size=10
-
-# Security
-security.max.login.attempts=5
-security.password.min.length=8
-```
-
-Or use environment variables:
-- `DB_URL`
-- `DB_USER`
-- `DB_PASSWORD`
-- `DB_POOL_SIZE`
-- `SECURITY_MAX_LOGIN_ATTEMPTS`
-- `SECURITY_PASSWORD_MIN_LENGTH`
-
-## 🛠️ Development
+## Development
 
 ### Project Structure
-- **Model Layer**: Domain entities (Note, User)
-- **Persistence Layer**: Repository pattern with dual storage
-- **UI Layer**: Swing components with MVC pattern
-- **Security Layer**: Password hashing and validation
-- **Configuration Layer**: Centralized settings management
+- `src/` - Source code
+- `lib/` - External libraries
+- `out/` - Compiled classes
+- `config.properties` - Local configuration (gitignored)
 
-### Design Patterns Used
-- Repository Pattern (data access)
-- Strategy Pattern (dual persistence)
-- Observer Pattern (UI updates)
-- Singleton Pattern (connection pool)
-- Factory Pattern (note creation)
+### Building
+```bash
+# Compile
+javac -cp "lib/*" -d out src/com/notesmith/**/*.java
 
-### Code Quality
-- ✅ Proper exception handling
-- ✅ Connection pooling
-- ✅ Prepared statements (SQL injection prevention)
-- ✅ Input validation
-- ✅ Logging framework
-- ✅ Constants for magic numbers
-- ✅ Clean separation of concerns
+# Run
+java -cp "out;lib/*" com.notesmith.Main
+```
 
-## 🐛 Troubleshooting
+## Security
+
+### API Key Safety
+- ✅ Never commit `config.properties` (gitignored)
+- ✅ Use environment variables for production
+- ✅ API keys are never hardcoded in source
+
+### Password Security
+- Passwords hashed with BCrypt (cost: 12)
+- Minimum 3 characters (configurable)
+- Stored securely in database
+
+## Troubleshooting
 
 ### Database Connection Issues
 - Ensure MySQL is running
 - Check credentials in `config.properties`
-- Verify database exists: `SHOW DATABASES;`
+- Verify database exists
+
+### AI Features Not Working
+- Check if API key is configured
+- Verify internet connection
+- App works in Mock Mode without API key
 
 ### ClassNotFoundException
 - Ensure JARs are in `lib/` folder
-- Add to classpath when compiling/running
+- Add libraries to project classpath in IDE
 
-### UI Not Displaying Correctly
-- Check Java version (requires 11+)
-- Try different Look and Feel if Nimbus unavailable
-
-## 📝 License
-
-This project is open source and available under the MIT License.
-
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📧 Support
+## License
 
-For issues and questions, please open an issue on GitHub.
+This project is open source and available under the MIT License.
+
+## Acknowledgments
+
+- Built with Java Swing
+- Powered by Google Gemini AI
+- Uses BCrypt for password hashing
+- MySQL for data persistence
 
 ---
 
-**Built with ❤️ using Java Swing**
+**Made with ❤️ by Rivera-C598**

@@ -53,7 +53,7 @@ Thumbs.db
 
 # --- NoteSmith specific ---
 # Configuration files with sensitive data
-config.properties
+resources/config.properties
 
 # User note files
 notes*.txt
