@@ -145,9 +145,9 @@ public class DashboardPanel extends CPanel {
                         display = "📌 " + display;
                     }
                     
-                    // Add tags
+                    // Add tags with better styling
                     if (!note.getTags().isEmpty()) {
-                        display += " [" + String.join(", ", note.getTags()) + "]";
+                        display += " 🏷️ " + String.join(" • ", note.getTags());
                     }
                     
                     setText(display);
