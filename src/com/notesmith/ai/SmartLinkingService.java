@@ -31,6 +31,12 @@ public class SmartLinkingService {
             return relatedNotes;
         }
         
+        // Use mock mode if no API key configured
+        if (MockAIService.shouldUseMockMode(com.notesmith.config.AppConfig.getGeminiApiKey())) {
+            logger.info("Using mock AI for related notes (no API key configured)");
+            return MockAIService.findMockRelatedNotes(currentNote, allNotes);
+        }
+        
         logger.info("Finding related notes for: " + currentNote.getTitle());
         
         // Extract keywords from current note

@@ -40,34 +40,49 @@ public class AIResponse {
             // Simple JSON parsing for Gemini response
             // Format: {"candidates":[{"content":{"parts":[{"text":"..."}]}}]}
             
-            int textStart = json.indexOf("\"text\":\"");
+            // Find the text field - it might be nested
+            int textStart = json.indexOf("\"text\"");
             if (textStart == -1) {
-                return new AIResponse("No text found in response", true);
+                return new AIResponse("No text found in response. Raw: " + json.substring(0, Math.min(200, json.length())), true);
             }
             
-            textStart += 8; // Length of "\"text\":\""
-            int textEnd = json.indexOf("\"", textStart);
-            
-            // Handle escaped quotes
-            while (textEnd > 0 && json.charAt(textEnd - 1) == '\\') {
-                textEnd = json.indexOf("\"", textEnd + 1);
+            // Find the opening quote after "text":
+            int quoteStart = json.indexOf("\"", textStart + 6);
+            if (quoteStart == -1) {
+                return new AIResponse("Malformed JSON - no opening quote", true);
             }
             
-            if (textEnd == -1) {
-                return new AIResponse("Malformed JSON response", true);
+            quoteStart++; // Move past the opening quote
+            
+            // Find the closing quote, handling escaped quotes
+            StringBuilder text = new StringBuilder();
+            boolean escaped = false;
+            
+            for (int i = quoteStart; i < json.length(); i++) {
+                char c = json.charAt(i);
+                
+                if (escaped) {
+                    // Handle escape sequences
+                    switch (c) {
+                        case 'n': text.append('\n'); break;
+                        case 'r': text.append('\r'); break;
+                        case 't': text.append('\t'); break;
+                        case '"': text.append('"'); break;
+                        case '\\': text.append('\\'); break;
+                        default: text.append(c); break;
+                    }
+                    escaped = false;
+                } else if (c == '\\') {
+                    escaped = true;
+                } else if (c == '"') {
+                    // Found the closing quote
+                    return new AIResponse(text.toString());
+                } else {
+                    text.append(c);
+                }
             }
             
-            String text = json.substring(textStart, textEnd);
-            
-            // Unescape JSON
-            text = text
-                .replace("\\n", "\n")
-                .replace("\\r", "\r")
-                .replace("\\t", "\t")
-                .replace("\\\"", "\"")
-                .replace("\\\\", "\\");
-            
-            return new AIResponse(text);
+            return new AIResponse("Incomplete JSON response", true);
             
         } catch (Exception e) {
             return new AIResponse("Failed to parse response: " + e.getMessage(), true);

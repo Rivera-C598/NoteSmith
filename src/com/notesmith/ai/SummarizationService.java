@@ -22,6 +22,12 @@ public class SummarizationService {
     public String summarize(Note note) {
         logger.info("Summarizing note: " + note.getTitle());
         
+        // Use mock mode if no API key configured
+        if (MockAIService.shouldUseMockMode(com.notesmith.config.AppConfig.getGeminiApiKey())) {
+            logger.info("Using mock AI for summary (no API key configured)");
+            return MockAIService.generateMockSummary(note);
+        }
+        
         String prompt = String.format(
             "Summarize this note in 2-3 concise sentences. Focus on the main points and key takeaways.\n\n" +
             "Title: %s\n" +

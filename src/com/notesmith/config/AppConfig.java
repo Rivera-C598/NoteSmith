@@ -51,11 +51,11 @@ public final class AppConfig {
     
     // AI Configuration
     public static String getGeminiApiKey() {
-        return getProperty("ai.gemini.api.key", "");
+        return getProperty("ai.gemini.api.key", "AIzaSyCS6inBC1rdC2hB24f9cMpyQhzsvafhN6A");
     }
     
     public static String getGeminiModel() {
-        return getProperty("ai.gemini.model", "gemini-2.5-flash-latest");
+        return getProperty("ai.gemini.model", "gemini-2.5-flash");
     }
     
     public static boolean isAIEnabled() {

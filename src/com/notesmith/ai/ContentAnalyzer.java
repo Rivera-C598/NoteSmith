@@ -25,6 +25,12 @@ public class ContentAnalyzer {
     public List<String> suggestTags(Note note) {
         logger.info("Suggesting tags for: " + note.getTitle());
         
+        // Use mock mode if no API key configured
+        if (MockAIService.shouldUseMockMode(com.notesmith.config.AppConfig.getGeminiApiKey())) {
+            logger.info("Using mock AI for tags (no API key configured)");
+            return MockAIService.generateMockTags(note);
+        }
+        
         String prompt = String.format(
             "Based on this note content, suggest 3-5 relevant tags. " +
             "Return ONLY the tags as a comma-separated list, nothing else.\n\n" +
