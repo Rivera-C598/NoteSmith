@@ -278,18 +278,21 @@ public class DashboardPanel extends CPanel {
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         toolbar.setOpaque(false);
 
-        CButton boldBtn = CButton.secondary("B");
+        CButton boldBtn = CButton.secondary("Bold");
         boldBtn.setFont(AppStyles.fontBold());
-        boldBtn.setPreferredSize(new Dimension(40, 32));
+        boldBtn.setPreferredSize(new Dimension(70, 32));
+        boldBtn.setToolTipText("Bold (wrap with **)");
         boldBtn.addActionListener(e -> wrapSelection("**", "**"));
 
-        CButton italicBtn = CButton.secondary("I");
+        CButton italicBtn = CButton.secondary("Italic");
         italicBtn.setFont(AppStyles.fontNormal().deriveFont(Font.ITALIC));
-        italicBtn.setPreferredSize(new Dimension(40, 32));
+        italicBtn.setPreferredSize(new Dimension(70, 32));
+        italicBtn.setToolTipText("Italic (wrap with _)");
         italicBtn.addActionListener(e -> wrapSelection("_", "_"));
 
-        CButton bulletBtn = CButton.secondary("•");
-        bulletBtn.setPreferredSize(new Dimension(40, 32));
+        CButton bulletBtn = CButton.secondary("• List");
+        bulletBtn.setPreferredSize(new Dimension(70, 32));
+        bulletBtn.setToolTipText("Bullet List (add - at line start)");
         bulletBtn.addActionListener(e -> insertAtLineStart("- "));
 
         toolbar.add(boldBtn);

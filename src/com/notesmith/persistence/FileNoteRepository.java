@@ -120,42 +120,50 @@ public class FileNoteRepository implements NoteRepository {
     }
 
     private Note parseLine(String line) {
-        String[] parts = line.split("\\|", 9);
+        String[] parts = line.split("\\|", -1); // -1 to keep trailing empty strings
         if (parts.length < 6) return null;
 
-        String id = parts[0];
-        NoteType type = NoteType.valueOf(parts[1]);
-        String title = parts[2].replace("\\|", "|");
-        String content = parts[3].replace("\\|", "|");
-        LocalDateTime created = LocalDateTime.parse(parts[4]);
-        LocalDateTime updated = LocalDateTime.parse(parts[5]);
+        try {
+            String id = parts[0];
+            NoteType type = NoteType.valueOf(parts[1]);
+            String title = parts[2].replace("\\|", "|");
+            String content = parts[3].replace("\\|", "|");
+            LocalDateTime created = LocalDateTime.parse(parts[4]);
+            LocalDateTime updated = LocalDateTime.parse(parts[5]);
 
-        Note note;
-        switch (type) {
-            case TEXT:
-                note = new TextNote(id, title, content, created, updated);
-                break;
-            case TODO:
-                boolean done = parts.length > 6 && Boolean.parseBoolean(parts[6]);
-                note = new TodoNote(id, title, content, created, updated, done);
-                break;
-            default:
-                return null;
-        }
-        
-        // Parse tags (index 7)
-        if (parts.length > 7 && !parts[7].isEmpty()) {
-            String[] tags = parts[7].split(",");
-            for (String tag : tags) {
-                note.addTag(tag.trim());
+            Note note;
+            switch (type) {
+                case TEXT:
+                    note = new TextNote(id, title, content, created, updated);
+                    break;
+                case TODO:
+                    boolean done = parts.length > 6 && !parts[6].isEmpty() && Boolean.parseBoolean(parts[6]);
+                    note = new TodoNote(id, title, content, created, updated, done);
+                    break;
+                default:
+                    return null;
             }
+            
+            // Parse tags (index 7) - handle old format without tags
+            if (parts.length > 7 && !parts[7].isEmpty()) {
+                String[] tags = parts[7].split(",");
+                for (String tag : tags) {
+                    String trimmed = tag.trim();
+                    if (!trimmed.isEmpty()) {
+                        note.addTag(trimmed);
+                    }
+                }
+            }
+            
+            // Parse pinned (index 8) - handle old format without pinned
+            if (parts.length > 8 && !parts[8].isEmpty()) {
+                note.setPinned(Boolean.parseBoolean(parts[8]));
+            }
+            
+            return note;
+        } catch (Exception e) {
+            logger.error("Failed to parse note line: " + line, e);
+            return null; // Skip corrupted lines
         }
-        
-        // Parse pinned (index 8)
-        if (parts.length > 8) {
-            note.setPinned(Boolean.parseBoolean(parts[8]));
-        }
-        
-        return note;
     }
 }
