@@ -1,6 +1,8 @@
 package com.notesmith.model;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public abstract class Note {
@@ -10,6 +12,8 @@ public abstract class Note {
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private final NoteType type;
+    private List<String> tags;
+    private boolean pinned;
 
     protected Note(String title, String content, NoteType type) {
         this.id = UUID.randomUUID().toString();
@@ -18,6 +22,8 @@ public abstract class Note {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = this.createdAt;
         this.type = type;
+        this.tags = new ArrayList<>();
+        this.pinned = false;
     }
 
     protected Note(String id, String title, String content,
@@ -29,6 +35,8 @@ public abstract class Note {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.type = type;
+        this.tags = new ArrayList<>();
+        this.pinned = false;
     }
 
     public String getId() { return id; }
@@ -55,6 +63,32 @@ public abstract class Note {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 
     public NoteType getType() { return type; }
+    
+    public List<String> getTags() { return new ArrayList<>(tags); }
+    
+    public void setTags(List<String> tags) {
+        this.tags = new ArrayList<>(tags);
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public void addTag(String tag) {
+        if (tag != null && !tag.trim().isEmpty() && !tags.contains(tag.trim())) {
+            tags.add(tag.trim());
+            this.updatedAt = LocalDateTime.now();
+        }
+    }
+    
+    public void removeTag(String tag) {
+        tags.remove(tag);
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public boolean isPinned() { return pinned; }
+    
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
+        this.updatedAt = LocalDateTime.now();
+    }
 
     // Polymorphic behavior
     public abstract String display();

@@ -9,6 +9,7 @@ import com.notesmith.model.TextNote;
 import com.notesmith.model.User;
 import com.notesmith.persistence.NoteRepository;
 import com.notesmith.ui.components.*;
+import com.notesmith.util.ExportUtils;
 import com.notesmith.util.ValidationUtils;
 
 import javax.swing.text.Document;
@@ -25,6 +26,8 @@ import java.awt.event.KeyEvent;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DashboardPanel extends CPanel {
@@ -38,13 +41,18 @@ public class DashboardPanel extends CPanel {
     private NoteRepository noteRepo;
 
     private DefaultListModel<Note> listModel;
+    private DefaultListModel<Note> filteredListModel;
     private JList<Note> noteList;
+    private List<Note> allNotes;
 
     private CTextField titleField;
+    private CTextField tagsField;
     private CTextArea contentArea;
     private JEditorPane previewPane;
     private JLabel messageLabel;
     private CButton saveBtn;
+    private CTextField searchField;
+    private JCheckBox pinCheckbox;
 
     private Note currentNote; // null = adding new note
 
@@ -97,7 +105,20 @@ public class DashboardPanel extends CPanel {
                                                           int index, boolean isSelected, boolean cellHasFocus) {
                 Component comp = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof Note) {
-                    setText(((Note) value).display());
+                    Note note = (Note) value;
+                    String display = note.display();
+                    
+                    // Add pin indicator
+                    if (note.isPinned()) {
+                        display = "📌 " + display;
+                    }
+                    
+                    // Add tags
+                    if (!note.getTags().isEmpty()) {
+                        display += " [" + String.join(", ", note.getTags()) + "]";
+                    }
+                    
+                    setText(display);
                 }
                 setBackground(isSelected ? AppStyles.ACCENT : AppStyles.BG_CARD);
                 setForeground(AppStyles.TEXT_PRIMARY);
@@ -108,17 +129,60 @@ public class DashboardPanel extends CPanel {
 
         JPanel left = new JPanel(new BorderLayout());
         left.setBackground(AppStyles.BG_MAIN);
-// slightly smaller right padding so gap in middle isn't huge
         left.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 4));
-        left.add(CLabel.secondary("Your Notes"), BorderLayout.NORTH);
+        
+        // Top section with title and search
+        JPanel leftTop = new JPanel();
+        leftTop.setLayout(new BoxLayout(leftTop, BoxLayout.Y_AXIS));
+        leftTop.setOpaque(false);
+        
+        JLabel notesLabel = CLabel.secondary("Your Notes");
+        notesLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        leftTop.add(notesLabel);
+        
+        leftTop.add(Box.createVerticalStrut(8));
+        
+        // Search field
+        searchField = new CTextField(20);
+        searchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        searchField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { filterNotes(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { filterNotes(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { filterNotes(); }
+        });
+        
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        searchPanel.setOpaque(false);
+        searchPanel.add(new CLabel("🔍 Search: "), BorderLayout.WEST);
+        searchPanel.add(searchField, BorderLayout.CENTER);
+        searchPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        searchPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        leftTop.add(searchPanel);
+        
+        left.add(leftTop, BorderLayout.NORTH);
 
         JScrollPane listScroll = new JScrollPane(noteList);
         listScroll.getViewport().setBackground(AppStyles.BG_MAIN);
         left.add(listScroll, BorderLayout.CENTER);
 
+        // Bottom buttons panel
+        JPanel bottomButtons = new JPanel(new GridLayout(3, 1, 4, 4));
+        bottomButtons.setOpaque(false);
+        
+        CButton exportBtn = new CButton("Export Selected");
+        exportBtn.addActionListener(e -> exportSelected());
+        bottomButtons.add(exportBtn);
+        
+        CButton exportAllBtn = new CButton("Export All");
+        exportAllBtn.addActionListener(e -> exportAll());
+        bottomButtons.add(exportAllBtn);
+        
         CButton deleteBtn = CButton.danger("Delete Selected");
         deleteBtn.addActionListener(e -> deleteSelectedWithConfirmation());
-        left.add(deleteBtn, BorderLayout.SOUTH);
+        bottomButtons.add(deleteBtn);
+        
+        left.add(bottomButtons, BorderLayout.SOUTH);
 
         // ===== RIGHT: EDITOR + PREVIEW =====
         JPanel right = new JPanel(new BorderLayout());
@@ -139,6 +203,18 @@ public class DashboardPanel extends CPanel {
         fields.add(titleField);
 
         installUndoRedo(titleField);
+
+        fields.add(Box.createVerticalStrut(8));
+        
+        // Tags field
+        JLabel tagsLabel = CLabel.secondary("Tags (comma-separated)");
+        fullWidth(tagsLabel);
+        fields.add(tagsLabel);
+        
+        tagsField = new CTextField(30);
+        tagsField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        fullWidth(tagsField);
+        fields.add(tagsField);
 
         fields.add(Box.createVerticalStrut(8));
 
@@ -212,21 +288,27 @@ public class DashboardPanel extends CPanel {
         buttonBar.setOpaque(false);
 
         // add New Note + Save buttons here
+        // Pin checkbox
+        pinCheckbox = new JCheckBox("📌 Pin this note");
+        pinCheckbox.setOpaque(false);
+        pinCheckbox.setForeground(AppStyles.TEXT_PRIMARY);
+        pinCheckbox.setFont(AppStyles.fontNormal());
+        fullWidth(pinCheckbox);
+        fields.add(pinCheckbox);
+        
+        fields.add(Box.createVerticalStrut(4));
+        
         // New Note button: clears editor and goes back to "Add Note" mode
         CButton newNoteBtn = CButton.danger("New Note");
         newNoteBtn.addActionListener(e -> clearEditor());
         buttonBar.add(newNoteBtn);
-
-        fullWidth(buttonBar);
-        fields.add(buttonBar);
-
-
 
 // Save/Add button: creates or updates depending on currentNote
         saveBtn = new CButton("Add Note");
         saveBtn.addActionListener(e -> saveNote());
         buttonBar.add(saveBtn);
 
+        fullWidth(buttonBar);
         fields.add(buttonBar);
 
         right.add(fields, BorderLayout.CENTER);
@@ -247,6 +329,8 @@ public class DashboardPanel extends CPanel {
                     currentNote = selected;
                     titleField.setText(selected.getTitle());
                     contentArea.setText(selected.getContent());
+                    tagsField.setText(String.join(", ", selected.getTags()));
+                    pinCheckbox.setSelected(selected.isPinned());
                     saveBtn.setText("Save Changes");
                     updatePreview();
                 }
@@ -259,11 +343,27 @@ public class DashboardPanel extends CPanel {
     private void loadNotes() {
         listModel.clear();
         try {
-            List<Note> notes = noteRepo.findAll();
-            notes.forEach(listModel::addElement);
+            allNotes = noteRepo.findAll();
+            allNotes.forEach(listModel::addElement);
         } catch (PersistenceException e) {
             messageLabel.setText("Failed to load notes: " + e.getMessage());
             messageLabel.setForeground(AppStyles.ACCENT_DANGER);
+        }
+    }
+    
+    private void filterNotes() {
+        String query = searchField.getText().toLowerCase().trim();
+        listModel.clear();
+        
+        if (query.isEmpty()) {
+            // Show all notes
+            allNotes.forEach(listModel::addElement);
+        } else {
+            // Filter notes by title or content
+            allNotes.stream()
+                .filter(note -> note.getTitle().toLowerCase().contains(query) ||
+                               note.getContent().toLowerCase().contains(query))
+                .forEach(listModel::addElement);
         }
     }
 
@@ -271,6 +371,8 @@ public class DashboardPanel extends CPanel {
     private void saveNote() {
         String title = titleField.getText().trim();
         String content = contentArea.getText().trim();
+        String tagsText = tagsField.getText().trim();
+        boolean pinned = pinCheckbox.isSelected();
 
         try {
             // Validate title
@@ -279,16 +381,45 @@ public class DashboardPanel extends CPanel {
             if (currentNote == null) {
                 // create new note
                 Note note = new TextNote(title, content);
+                
+                // Add tags
+                if (!tagsText.isEmpty()) {
+                    String[] tags = tagsText.split(",");
+                    for (String tag : tags) {
+                        note.addTag(tag.trim());
+                    }
+                }
+                
+                note.setPinned(pinned);
                 noteRepo.save(note);
-                listModel.add(0, note); // add to top
+                
+                // Reload to maintain sort order (pinned first)
+                loadNotes();
                 messageLabel.setText("Note added successfully!");
                 messageLabel.setForeground(AppStyles.ACCENT);
             } else {
                 // update existing note
                 currentNote.setTitle(title);
                 currentNote.setContent(content);
+                
+                // Update tags
+                List<String> newTags = new ArrayList<>();
+                if (!tagsText.isEmpty()) {
+                    String[] tags = tagsText.split(",");
+                    for (String tag : tags) {
+                        String trimmed = tag.trim();
+                        if (!trimmed.isEmpty()) {
+                            newTags.add(trimmed);
+                        }
+                    }
+                }
+                currentNote.setTags(newTags);
+                currentNote.setPinned(pinned);
+                
                 noteRepo.save(currentNote);
-                noteList.repaint();
+                
+                // Reload to maintain sort order
+                loadNotes();
                 messageLabel.setText("Note updated successfully!");
                 messageLabel.setForeground(AppStyles.ACCENT);
             }
@@ -308,6 +439,8 @@ public class DashboardPanel extends CPanel {
         currentNote = null;
         titleField.setText("");
         contentArea.setText("");
+        tagsField.setText("");
+        pinCheckbox.setSelected(false);
         saveBtn.setText("Add Note");
         updatePreview();
         noteList.clearSelection();
@@ -492,6 +625,16 @@ public class DashboardPanel extends CPanel {
             }
         });
         
+        // Ctrl+E to export selected
+        KeyStroke exportKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_E, shortcutMask);
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(exportKeyStroke, "export");
+        getActionMap().put("export", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                exportSelected();
+            }
+        });
+        
         // Delete key to delete selected note
         KeyStroke deleteKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0);
         noteList.getInputMap(JComponent.WHEN_FOCUSED).put(deleteKeyStroke, "delete");
@@ -501,6 +644,90 @@ public class DashboardPanel extends CPanel {
                 deleteSelectedWithConfirmation();
             }
         });
+    }
+    
+    private void exportSelected() {
+        Note selected = noteList.getSelectedValue();
+        if (selected == null) {
+            messageLabel.setText("Select a note to export.");
+            messageLabel.setForeground(AppStyles.ACCENT_DANGER);
+            return;
+        }
+        
+        String[] options = {"Markdown (.md)", "HTML (.html)", "Cancel"};
+        int choice = JOptionPane.showOptionDialog(
+            this,
+            "Choose export format:",
+            "Export Note",
+            JOptionPane.YES_NO_CANCEL_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            options,
+            options[0]
+        );
+        
+        if (choice == 2 || choice == JOptionPane.CLOSED_OPTION) {
+            return; // Cancelled
+        }
+        
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Export Note");
+        
+        String extension = choice == 0 ? ".md" : ".html";
+        String suggestedName = selected.getTitle().replaceAll("[^a-zA-Z0-9-_]", "_") + extension;
+        fileChooser.setSelectedFile(new java.io.File(suggestedName));
+        
+        int result = fileChooser.showSaveDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            try {
+                String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+                if (!filePath.endsWith(extension)) {
+                    filePath += extension;
+                }
+                
+                if (choice == 0) {
+                    ExportUtils.exportToMarkdown(selected, filePath);
+                } else {
+                    ExportUtils.exportToHtml(selected, filePath);
+                }
+                
+                messageLabel.setText("Note exported successfully!");
+                messageLabel.setForeground(AppStyles.ACCENT);
+            } catch (IOException e) {
+                messageLabel.setText("Export failed: " + e.getMessage());
+                messageLabel.setForeground(AppStyles.ACCENT_DANGER);
+            }
+        }
+    }
+    
+    private void exportAll() {
+        if (allNotes.isEmpty()) {
+            messageLabel.setText("No notes to export.");
+            messageLabel.setForeground(AppStyles.ACCENT_DANGER);
+            return;
+        }
+        
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Export All Notes");
+        fileChooser.setSelectedFile(new java.io.File("all_notes.md"));
+        
+        int result = fileChooser.showSaveDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            try {
+                String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+                if (!filePath.endsWith(".md")) {
+                    filePath += ".md";
+                }
+                
+                ExportUtils.exportAllToMarkdown(allNotes, filePath);
+                
+                messageLabel.setText("All notes exported successfully!");
+                messageLabel.setForeground(AppStyles.ACCENT);
+            } catch (IOException e) {
+                messageLabel.setText("Export failed: " + e.getMessage());
+                messageLabel.setForeground(AppStyles.ACCENT_DANGER);
+            }
+        }
     }
 
 }

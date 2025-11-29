@@ -102,6 +102,9 @@ public class FileNoteRepository implements NoteRepository {
         if (n instanceof TodoNote) {
             doneValue = String.valueOf(((TodoNote) n).isDone());
         }
+        
+        String tags = String.join(",", n.getTags());
+        String pinned = String.valueOf(n.isPinned());
 
         return String.join("|",
                 n.getId(),
@@ -110,12 +113,14 @@ public class FileNoteRepository implements NoteRepository {
                 safeContent,
                 created,
                 updated,
-                doneValue
+                doneValue,
+                tags,
+                pinned
         );
     }
 
     private Note parseLine(String line) {
-        String[] parts = line.split("\\|", 7);
+        String[] parts = line.split("\\|", 9);
         if (parts.length < 6) return null;
 
         String id = parts[0];
@@ -125,14 +130,32 @@ public class FileNoteRepository implements NoteRepository {
         LocalDateTime created = LocalDateTime.parse(parts[4]);
         LocalDateTime updated = LocalDateTime.parse(parts[5]);
 
+        Note note;
         switch (type) {
             case TEXT:
-                return new TextNote(id, title, content, created, updated);
+                note = new TextNote(id, title, content, created, updated);
+                break;
             case TODO:
                 boolean done = parts.length > 6 && Boolean.parseBoolean(parts[6]);
-                return new TodoNote(id, title, content, created, updated, done);
+                note = new TodoNote(id, title, content, created, updated, done);
+                break;
             default:
                 return null;
         }
+        
+        // Parse tags (index 7)
+        if (parts.length > 7 && !parts[7].isEmpty()) {
+            String[] tags = parts[7].split(",");
+            for (String tag : tags) {
+                note.addTag(tag.trim());
+            }
+        }
+        
+        // Parse pinned (index 8)
+        if (parts.length > 8) {
+            note.setPinned(Boolean.parseBoolean(parts[8]));
+        }
+        
+        return note;
     }
 }

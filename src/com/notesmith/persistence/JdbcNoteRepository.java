@@ -25,8 +25,8 @@ public class JdbcNoteRepository implements NoteRepository {
     public List<Note> findAll() throws PersistenceException {
         List<Note> notes = new ArrayList<>();
 
-        String sql = "SELECT id, title, content, created_at, updated_at, type, done " +
-                "FROM notes WHERE user_id = ? ORDER BY created_at DESC";
+        String sql = "SELECT id, title, content, created_at, updated_at, type, done, tags, pinned " +
+                "FROM notes WHERE user_id = ? ORDER BY pinned DESC, created_at DESC";
         
         Connection conn = null;
         try {
@@ -43,6 +43,8 @@ public class JdbcNoteRepository implements NoteRepository {
                         LocalDateTime updatedAt = rs.getTimestamp("updated_at").toLocalDateTime();
                         NoteType type = NoteType.valueOf(rs.getString("type"));
                         boolean done = rs.getBoolean("done");
+                        String tagsStr = rs.getString("tags");
+                        boolean pinned = rs.getBoolean("pinned");
 
                         Note note;
                         if (type == NoteType.TODO) {
@@ -50,6 +52,16 @@ public class JdbcNoteRepository implements NoteRepository {
                         } else {
                             note = new TextNote(id, title, content, createdAt, updatedAt);
                         }
+                        
+                        // Parse tags
+                        if (tagsStr != null && !tagsStr.isEmpty()) {
+                            String[] tagArray = tagsStr.split(",");
+                            for (String tag : tagArray) {
+                                note.addTag(tag.trim());
+                            }
+                        }
+                        
+                        note.setPinned(pinned);
                         notes.add(note);
                     }
                 }
@@ -68,15 +80,17 @@ public class JdbcNoteRepository implements NoteRepository {
     @Override
     public void save(Note note) throws PersistenceException {
         String sqlUpdate =
-                "UPDATE notes SET title = ?, content = ?, updated_at = ?, type = ?, done = ? " +
+                "UPDATE notes SET title = ?, content = ?, updated_at = ?, type = ?, done = ?, tags = ?, pinned = ? " +
                         "WHERE id = ? AND user_id = ?";
         String sqlInsert =
-                "INSERT INTO notes (id, user_id, title, content, created_at, updated_at, type, done) " +
-                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                "INSERT INTO notes (id, user_id, title, content, created_at, updated_at, type, done, tags, pinned) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         LocalDateTime createdAt = note.getCreatedAt();
         LocalDateTime updatedAt = note.getUpdatedAt();
         boolean done = (note instanceof TodoNote) && ((TodoNote) note).isDone();
+        String tags = String.join(",", note.getTags());
+        boolean pinned = note.isPinned();
 
         Connection conn = null;
         try {
@@ -88,8 +102,10 @@ public class JdbcNoteRepository implements NoteRepository {
                 ps.setTimestamp(3, Timestamp.valueOf(updatedAt));
                 ps.setString(4, note.getType().name());
                 ps.setBoolean(5, done);
-                ps.setString(6, note.getId());
-                ps.setInt(7, userId);
+                ps.setString(6, tags);
+                ps.setBoolean(7, pinned);
+                ps.setString(8, note.getId());
+                ps.setInt(9, userId);
 
                 int rows = ps.executeUpdate();
                 if (rows == 0) {
@@ -103,6 +119,8 @@ public class JdbcNoteRepository implements NoteRepository {
                         psIns.setTimestamp(6, Timestamp.valueOf(updatedAt));
                         psIns.setString(7, note.getType().name());
                         psIns.setBoolean(8, done);
+                        psIns.setString(9, tags);
+                        psIns.setBoolean(10, pinned);
                         psIns.executeUpdate();
                     }
                 }
