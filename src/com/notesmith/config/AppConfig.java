@@ -49,6 +49,27 @@ public final class AppConfig {
         return Integer.parseInt(getProperty("security.password.min.length", "8"));
     }
     
+    // AI Configuration
+    public static String getGeminiApiKey() {
+        return getProperty("ai.gemini.api.key", "");
+    }
+    
+    public static String getGeminiModel() {
+        return getProperty("ai.gemini.model", "gemini-2.5-flash-latest");
+    }
+    
+    public static boolean isAIEnabled() {
+        return Boolean.parseBoolean(getProperty("ai.enabled", "true"));
+    }
+    
+    public static boolean isAICacheEnabled() {
+        return Boolean.parseBoolean(getProperty("ai.cache.enabled", "true"));
+    }
+    
+    public static int getAIMaxTokens() {
+        return Integer.parseInt(getProperty("ai.max.tokens", "1000"));
+    }
+    
     private static String getProperty(String key, String defaultValue) {
         // Check environment variable first (uppercase with underscores)
         String envKey = key.toUpperCase().replace('.', '_');

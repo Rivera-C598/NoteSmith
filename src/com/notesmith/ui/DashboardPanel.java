@@ -1,5 +1,10 @@
 package com.notesmith.ui;
 
+import com.notesmith.ai.ContentAnalyzer;
+import com.notesmith.ai.SmartLinkingService;
+import com.notesmith.ai.SummarizationService;
+import com.notesmith.ai.models.RelatedNote;
+import com.notesmith.config.AppConfig;
 import com.notesmith.config.AppStyles;
 import com.notesmith.config.UIConstants;
 import com.notesmith.exception.PersistenceException;
@@ -55,10 +60,28 @@ public class DashboardPanel extends CPanel {
     private JCheckBox pinCheckbox;
 
     private Note currentNote; // null = adding new note
+    
+    // AI Services
+    private SmartLinkingService smartLinkingService;
+    private SummarizationService summarizationService;
+    private ContentAnalyzer contentAnalyzer;
+    
+    // AI UI Components
+    private JTextArea aiSummaryArea;
+    private DefaultListModel<RelatedNote> relatedNotesModel;
+    private JList<RelatedNote> relatedNotesList;
+    private JLabel aiStatusLabel;
 
     public DashboardPanel(User user, NoteRepository noteRepo, LogoutListener listener) {
         this.user = user;
         this.noteRepo = noteRepo;
+        
+        // Initialize AI services if enabled
+        if (AppConfig.isAIEnabled()) {
+            this.smartLinkingService = new SmartLinkingService();
+            this.summarizationService = new SummarizationService();
+            this.contentAnalyzer = new ContentAnalyzer();
+        }
 
         setLayout(new BorderLayout());
         setBackground(AppStyles.BG_MAIN);
@@ -313,10 +336,19 @@ public class DashboardPanel extends CPanel {
 
         right.add(fields, BorderLayout.CENTER);
 
+        // ===== RIGHT PANEL: AI Insights =====
+        JPanel aiPanel = createAIPanel();
+        
+        // Three-way split: notes list | editor | AI insights
+        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitPane, aiPanel);
+        mainSplit.setDividerLocation(700);
+        mainSplit.setContinuousLayout(true);
+        mainSplit.setDividerSize(UIConstants.DIVIDER_SIZE);
+        
         splitPane.setLeftComponent(left);
         splitPane.setRightComponent(right);
 
-        add(splitPane, BorderLayout.CENTER);
+        add(mainSplit, BorderLayout.CENTER);
         
         // Setup keyboard shortcuts
         setupKeyboardShortcuts();
@@ -728,6 +760,215 @@ public class DashboardPanel extends CPanel {
                 messageLabel.setForeground(AppStyles.ACCENT_DANGER);
             }
         }
+    }
+    
+    private JPanel createAIPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(AppStyles.BG_MAIN);
+        panel.setBorder(BorderFactory.createEmptyBorder(8, 4, 8, 8));
+        
+        JPanel content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.setOpaque(false);
+        
+        // Title
+        JLabel titleLabel = CLabel.title("🤖 AI Insights");
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        content.add(titleLabel);
+        
+        content.add(Box.createVerticalStrut(16));
+        
+        // AI Status
+        aiStatusLabel = CLabel.secondary(AppConfig.isAIEnabled() ? "AI Ready" : "AI Disabled");
+        aiStatusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        content.add(aiStatusLabel);
+        
+        content.add(Box.createVerticalStrut(16));
+        
+        // Related Notes Section
+        JLabel relatedLabel = CLabel.secondary("🔗 Related Notes");
+        relatedLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        content.add(relatedLabel);
+        
+        content.add(Box.createVerticalStrut(8));
+        
+        relatedNotesModel = new DefaultListModel<>();
+        relatedNotesList = new JList<>(relatedNotesModel);
+        relatedNotesList.setBackground(AppStyles.BG_CARD);
+        relatedNotesList.setForeground(AppStyles.TEXT_PRIMARY);
+        relatedNotesList.setFont(AppStyles.fontSmall());
+        relatedNotesList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                RelatedNote selected = relatedNotesList.getSelectedValue();
+                if (selected != null) {
+                    // Load the related note
+                    noteList.setSelectedValue(selected.getNote(), true);
+                }
+            }
+        });
+        
+        JScrollPane relatedScroll = new JScrollPane(relatedNotesList);
+        relatedScroll.setPreferredSize(new Dimension(200, 150));
+        relatedScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
+        relatedScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
+        content.add(relatedScroll);
+        
+        content.add(Box.createVerticalStrut(8));
+        
+        CButton findRelatedBtn = new CButton("Find Related");
+        findRelatedBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        findRelatedBtn.addActionListener(e -> findRelatedNotes());
+        content.add(findRelatedBtn);
+        
+        content.add(Box.createVerticalStrut(16));
+        
+        // Summary Section
+        JLabel summaryLabel = CLabel.secondary("📝 AI Summary");
+        summaryLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        content.add(summaryLabel);
+        
+        content.add(Box.createVerticalStrut(8));
+        
+        aiSummaryArea = new JTextArea(5, 20);
+        aiSummaryArea.setBackground(AppStyles.BG_CARD);
+        aiSummaryArea.setForeground(AppStyles.TEXT_PRIMARY);
+        aiSummaryArea.setFont(AppStyles.fontSmall());
+        aiSummaryArea.setLineWrap(true);
+        aiSummaryArea.setWrapStyleWord(true);
+        aiSummaryArea.setEditable(false);
+        aiSummaryArea.setText("Select a note and click 'Summarize' to generate an AI summary.");
+        
+        JScrollPane summaryScroll = new JScrollPane(aiSummaryArea);
+        summaryScroll.setPreferredSize(new Dimension(200, 120));
+        summaryScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
+        summaryScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
+        content.add(summaryScroll);
+        
+        content.add(Box.createVerticalStrut(8));
+        
+        CButton summarizeBtn = new CButton("Summarize");
+        summarizeBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        summarizeBtn.addActionListener(e -> summarizeCurrentNote());
+        content.add(summarizeBtn);
+        
+        content.add(Box.createVerticalStrut(16));
+        
+        // Tag Suggestions
+        CButton suggestTagsBtn = new CButton("Suggest Tags");
+        suggestTagsBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        suggestTagsBtn.addActionListener(e -> suggestTags());
+        content.add(suggestTagsBtn);
+        
+        JScrollPane scrollPane = new JScrollPane(content);
+        scrollPane.setBackground(AppStyles.BG_MAIN);
+        scrollPane.getViewport().setBackground(AppStyles.BG_MAIN);
+        scrollPane.setBorder(null);
+        
+        panel.add(scrollPane, BorderLayout.CENTER);
+        
+        return panel;
+    }
+    
+    private void findRelatedNotes() {
+        if (!AppConfig.isAIEnabled() || smartLinkingService == null) {
+            aiStatusLabel.setText("AI is disabled");
+            aiStatusLabel.setForeground(AppStyles.ACCENT_DANGER);
+            return;
+        }
+        
+        if (currentNote == null) {
+            aiStatusLabel.setText("Select a note first");
+            aiStatusLabel.setForeground(AppStyles.ACCENT_DANGER);
+            return;
+        }
+        
+        aiStatusLabel.setText("Finding related notes...");
+        aiStatusLabel.setForeground(AppStyles.TEXT_SECONDARY);
+        relatedNotesModel.clear();
+        
+        // Run in background thread
+        new Thread(() -> {
+            List<RelatedNote> related = smartLinkingService.findRelatedNotes(currentNote, allNotes);
+            
+            SwingUtilities.invokeLater(() -> {
+                relatedNotesModel.clear();
+                for (RelatedNote rn : related) {
+                    relatedNotesModel.addElement(rn);
+                }
+                
+                if (related.isEmpty()) {
+                    aiStatusLabel.setText("No related notes found");
+                } else {
+                    aiStatusLabel.setText("Found " + related.size() + " related notes");
+                    aiStatusLabel.setForeground(AppStyles.ACCENT);
+                }
+            });
+        }).start();
+    }
+    
+    private void summarizeCurrentNote() {
+        if (!AppConfig.isAIEnabled() || summarizationService == null) {
+            aiSummaryArea.setText("AI is disabled. Enable it in config.properties");
+            return;
+        }
+        
+        if (currentNote == null) {
+            aiSummaryArea.setText("Select a note to summarize.");
+            return;
+        }
+        
+        aiSummaryArea.setText("Generating summary...");
+        aiStatusLabel.setText("Summarizing...");
+        
+        // Run in background thread
+        new Thread(() -> {
+            String summary = summarizationService.summarize(currentNote);
+            
+            SwingUtilities.invokeLater(() -> {
+                aiSummaryArea.setText(summary);
+                aiStatusLabel.setText("Summary generated");
+                aiStatusLabel.setForeground(AppStyles.ACCENT);
+            });
+        }).start();
+    }
+    
+    private void suggestTags() {
+        if (!AppConfig.isAIEnabled() || contentAnalyzer == null) {
+            messageLabel.setText("AI is disabled");
+            messageLabel.setForeground(AppStyles.ACCENT_DANGER);
+            return;
+        }
+        
+        if (currentNote == null) {
+            messageLabel.setText("Select a note first");
+            messageLabel.setForeground(AppStyles.ACCENT_DANGER);
+            return;
+        }
+        
+        aiStatusLabel.setText("Suggesting tags...");
+        messageLabel.setText("AI is analyzing content...");
+        
+        // Run in background thread
+        new Thread(() -> {
+            List<String> suggestedTags = contentAnalyzer.suggestTags(currentNote);
+            
+            SwingUtilities.invokeLater(() -> {
+                if (suggestedTags.isEmpty()) {
+                    messageLabel.setText("No tag suggestions available");
+                    messageLabel.setForeground(AppStyles.ACCENT_DANGER);
+                } else {
+                    String currentTags = tagsField.getText().trim();
+                    String newTags = currentTags.isEmpty() ? 
+                        String.join(", ", suggestedTags) :
+                        currentTags + ", " + String.join(", ", suggestedTags);
+                    
+                    tagsField.setText(newTags);
+                    messageLabel.setText("Tags suggested! Review and save.");
+                    messageLabel.setForeground(AppStyles.ACCENT);
+                    aiStatusLabel.setText("Tags suggested");
+                }
+            });
+        }).start();
     }
 
 }

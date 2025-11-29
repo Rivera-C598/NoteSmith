@@ -10,3 +10,10 @@ db.pool.size=10
 # Security Settings
 security.max.login.attempts=5
 security.password.min.length=8
+
+# AI Configuration (Gemini API)
+ai.enabled=true
+ai.gemini.api.key=YOUR_GEMINI_API_KEY_HERE
+ai.gemini.model=gemini-2.5-flash-latest
+ai.cache.enabled=true
+ai.max.tokens=1000

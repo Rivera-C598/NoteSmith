@@ -44,6 +44,14 @@ CREATE TABLE notes (
 2. Update database credentials if needed:
    - Default XAMPP MySQL: user=root, password=(empty)
    - For production, use strong credentials
+3. **AI Configuration (Optional)**:
+   - Get a free Gemini API key from: https://makersuite.google.com/app/apikey
+   - Add your API key to `config.properties`:
+     ```
+     ai.gemini.api.key=YOUR_API_KEY_HERE
+     ```
+   - Set `ai.enabled=true` to enable AI features
+   - Set `ai.enabled=false` to disable AI features
 
 ## Running the Application
 
