@@ -1,0 +1,59 @@
+### IntelliJ IDEA ###
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Mac OS ###
+.DS_Store
+
+# --- IntelliJ IDEA ---
+.idea/
+*.iml
+*.iws
+
+# --- Build output ---
+out/
+build/
+target/
+*.class
+
+# --- Logs ---
+*.log
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+
+# --- Temp files ---
+*.tmp
+*.swp
+*~
+
+# --- NoteSmith specific ---
+# Configuration files with sensitive data
+config.properties
+
+# User note files
+notes*.txt
