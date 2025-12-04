@@ -1,14 +1,24 @@
 ﻿{
-  "name": "Java + Postgres",
-  "image": "mcr.microsoft.com/devcontainers/java:17",
-  "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
-  },
-  "postCreateCommand": "sudo service docker start && docker compose up -d db",
-  "forwardPorts": [8080, 5432],
+  "name": "NoteSmith - Java + PostgreSQL",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "forwardPorts": [5432],
   "portsAttributes": {
-    "8080": { "label": "App" },
-    "5432": { "label": "Postgres" }
+    "5432": { 
+      "label": "PostgreSQL Database",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "bash -c 'sleep 5 && psql -h db -U app -d notesmith_db -f database_migration.sql'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "redhat.java",
+        "vscjava.vscode-maven"
+      ]
+    }
   },
   "remoteUser": "vscode"
 }
