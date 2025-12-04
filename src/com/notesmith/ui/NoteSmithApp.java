@@ -47,6 +47,23 @@ public class NoteSmithApp extends JFrame
         setLayout(new BorderLayout());
         getContentPane().setBackground(AppStyles.BG_MAIN);
         
+        // Set application icon
+        try {
+            // Try to load icon from resources
+            java.net.URL iconURL = getClass().getResource("/icon.png");
+            if (iconURL == null) {
+                iconURL = getClass().getResource("/icon.ico");
+            }
+            if (iconURL != null) {
+                Image iconImage = Toolkit.getDefaultToolkit().getImage(iconURL);
+                setIconImage(iconImage);
+            } else {
+                System.err.println("Warning: Icon file not found in resources");
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Failed to load icon - " + e.getMessage());
+        }
+        
         // Add shutdown hook to close database connections
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override

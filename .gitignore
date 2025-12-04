@@ -39,6 +39,11 @@ build/
 target/
 *.class
 
+# --- Distribution files (don't commit built apps) ---
+NoteSmith/
+*.zip
+NoteSmith-Portable.zip
+
 # --- Logs ---
 *.log
 

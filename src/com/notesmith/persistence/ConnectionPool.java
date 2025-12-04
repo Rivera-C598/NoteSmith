@@ -24,6 +24,22 @@ public class ConnectionPool {
     
     private ConnectionPool() {
         this.maxPoolSize = AppConfig.getDbPoolSize();
+        
+        // Load H2 database driver
+        try {
+            Class.forName("org.h2.Driver");
+            logger.info("H2 database driver loaded successfully");
+        } catch (ClassNotFoundException e) {
+            logger.error("H2 database driver not found!", e);
+            System.err.println("CRITICAL ERROR: H2 database driver not found!");
+            System.err.println("Make sure h2-*.jar is in the lib/ folder");
+            e.printStackTrace();
+            throw new RuntimeException("Failed to load H2 database driver", e);
+        }
+        
+        logger.info("Initializing database connection pool...");
+        logger.info("Database URL: " + AppConfig.getDbUrl());
+        
         initializePool();
     }
     
@@ -36,12 +52,56 @@ public class ConnectionPool {
     
     private void initializePool() {
         try {
+            // Initialize H2 database schema
+            initializeSchema();
+            
             for (int i = 0; i < 3; i++) { // Start with 3 connections
                 availableConnections.add(createConnection());
             }
             logger.info("Connection pool initialized with " + availableConnections.size() + " connections");
         } catch (SQLException e) {
             logger.error("Failed to initialize connection pool", e);
+        }
+    }
+    
+    private void initializeSchema() throws SQLException {
+        logger.info("Initializing database schema...");
+        try (Connection conn = createConnection();
+             var statement = conn.createStatement()) {
+            
+            // Read and execute schema.sql
+            String schema = """
+                CREATE TABLE IF NOT EXISTS users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(50) UNIQUE NOT NULL,
+                    password_hash VARCHAR(255) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                
+                CREATE TABLE IF NOT EXISTS notes (
+                    id VARCHAR(36) PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    title VARCHAR(200) NOT NULL,
+                    content TEXT,
+                    created_at TIMESTAMP NOT NULL,
+                    updated_at TIMESTAMP NOT NULL,
+                    type VARCHAR(20) NOT NULL,
+                    done BOOLEAN DEFAULT FALSE,
+                    tags VARCHAR(500) DEFAULT '',
+                    pinned BOOLEAN DEFAULT FALSE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+                
+                CREATE INDEX IF NOT EXISTS idx_user_pinned_created ON notes(user_id, pinned DESC, created_at DESC);
+                """;
+            
+            statement.execute(schema);
+            logger.info("Database schema initialized successfully");
+        } catch (SQLException e) {
+            logger.error("Failed to initialize database schema", e);
+            System.err.println("CRITICAL ERROR: Failed to initialize database schema");
+            e.printStackTrace();
+            throw e;
         }
     }
     

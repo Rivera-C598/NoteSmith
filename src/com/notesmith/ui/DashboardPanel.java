@@ -111,9 +111,20 @@ public class DashboardPanel extends CPanel {
 
         topBar.add(titleWrap, BorderLayout.WEST);
 
+        // Right side buttons
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        rightPanel.setOpaque(false);
+        
+        CButton settingsBtn = new CButton("AI Settings");
+        settingsBtn.setBackground(new Color(100, 100, 100));
+        settingsBtn.addActionListener(e -> openSettings());
+        rightPanel.add(settingsBtn);
+        
         CButton logoutBtn = CButton.danger("Logout");
         logoutBtn.addActionListener(e -> listener.onLogout());
-        topBar.add(logoutBtn, BorderLayout.EAST);
+        rightPanel.add(logoutBtn);
+        
+        topBar.add(rightPanel, BorderLayout.EAST);
 
         add(topBar, BorderLayout.NORTH);
 
@@ -553,6 +564,11 @@ public class DashboardPanel extends CPanel {
             messageLabel.setText("Failed to delete note: " + e.getMessage());
             messageLabel.setForeground(AppStyles.ACCENT_DANGER);
         }
+    }
+    
+    private void openSettings() {
+        SettingsDialog settingsDialog = new SettingsDialog((Frame) SwingUtilities.getWindowAncestor(this));
+        settingsDialog.setVisible(true);
     }
 
     private void wrapSelection(String prefix, String suffix) {

@@ -100,7 +100,7 @@ public final class ExportUtils {
                 }
                 
                 if (note.isPinned()) {
-                    writer.write("*📌 Pinned*  ");
+                    writer.write("*[PINNED]*  ");
                     writer.newLine();
                 }
                 
@@ -179,7 +179,7 @@ public final class ExportUtils {
             }
             
             if (note.isPinned()) {
-                writer.write("            <p class=\"pinned\">📌 Pinned</p>");
+                writer.write("            <p class=\"pinned\">[PINNED]</p>");
                 writer.newLine();
             }
             
