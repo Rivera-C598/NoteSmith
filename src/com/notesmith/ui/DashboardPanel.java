@@ -440,7 +440,7 @@ public class DashboardPanel extends CPanel {
         }
     }
 
-    // Save note: handles both Add and Update depending on currentNote
+    // Save note
     private void saveNote() {
         String title = titleField.getText().trim();
         String content = contentArea.getText().trim();

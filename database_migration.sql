@@ -1,17 +1,16 @@
--- Migration script to add tags and pinned columns to notes table
--- Run this if you already have the notes table created
+-- migration script to add tags and pinned columns to notes table
+-- run this if you already have the notes table created
 
--- Add tags column (stores comma-separated tags)
+-- add tags column (stores comma-separated tags)
 ALTER TABLE notes ADD COLUMN IF NOT EXISTS tags VARCHAR(500) DEFAULT '';
 
--- Add pinned column (boolean flag for pinned notes)
+-- add pinned column (boolean flag for pinned notes)
 ALTER TABLE notes ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT FALSE;
 
--- Update the index to prioritize pinned notes
+-- update the index to prioritize pinned notes
 DROP INDEX IF EXISTS idx_user_created;
 CREATE INDEX idx_user_pinned_created ON notes(user_id, pinned DESC, created_at DESC);
 
--- For fresh installations, use this complete schema:
 /*
 CREATE TABLE IF NOT EXISTS notes (
     id VARCHAR(36) PRIMARY KEY,

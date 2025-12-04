@@ -26,15 +26,15 @@ public final class AppConfig {
     private AppConfig() {}
     
     public static String getDbUrl() {
-        return getProperty("db.url", "jdbc:mysql://localhost:3306/notesmith_db?useSSL=false&serverTimezone=UTC");
+        return getProperty("db.url", "jdbc:postgresql://localhost:5432/notesmith_db");
     }
     
     public static String getDbUser() {
-        return getProperty("db.user", "root");
+        return getProperty("db.user", "app");
     }
     
     public static String getDbPassword() {
-        return getProperty("db.password", "");
+        return getProperty("db.password", "app");
     }
     
     public static int getDbPoolSize() {

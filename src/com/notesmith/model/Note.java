@@ -90,6 +90,6 @@ public abstract class Note {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // Polymorphic behavior
+    // Polymorphism
     public abstract String display();
 }
